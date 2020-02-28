@@ -1,7 +1,7 @@
 import nltk
 import numpy as np
 import random
-import string
+import re, string, unicodedata
 from sklearn.feature_extraction.text import TfidfVectorizer
 from sklearn.metrics.pairwise import cosine_similarity
 
@@ -18,22 +18,23 @@ raw=raw.lower()
 ## converts to list of sentences 
 sent_tokens = nltk.sent_tokenize(raw)
 
-## converts to list of words
-word_tokens = nltk.word_tokenize(raw)
 
 
-##initializing lemmatizer
-lemmer = nltk.stem.WordNetLemmatizer()
-def LemTokens(tokens):
-    return [lemmer.lemmatize(token) for token in tokens]
+def Normalize(text):
+    remove_punct_dict = dict((ord(punct), None) for punct in string.punctuation)
+    #word tokenization
+    word_tokens = nltk.word_tokenize(text.lower().translate(remove_punct_dict))
+    
+    #remove ascii
+    new_words = []
+    for word in word_tokens:
+        new_word = unicodedata.normalize('NFKD', word).encode('ascii', 'ignore').decode('utf-8', 'ignore')
+        new_words.append(new_word)
+    
+    ##initializing lemmatizer
+    lemmer = nltk.stem.WordNetLemmatizer()
 
-
-##creating a dict to remove punctuations
-remove_punct_dict = dict((ord(punct), " ") for punct in string.punctuation)
-
-
-def LemNormalize(text):
-    return LemTokens(nltk.word_tokenize(text.lower().translate(remove_punct_dict)))
+    return [lemmer.lemmatize(token) for token in new_words]
     
 
 GREETING_INPUTS = ("hello", "hi", "greetings", "sup", "what's up","hey",)
@@ -46,12 +47,10 @@ def greeting(sentence):
             return random.choice(GREETING_RESPONSES)
 
 
-
-
 def response(user_response):
     robo_response=''
     sent_tokens.append(user_response)
-    TfidfVec = TfidfVectorizer(tokenizer=LemNormalize, stop_words='english')
+    TfidfVec = TfidfVectorizer(tokenizer=Normalize, stop_words='english')
 
     ##converting sentence tokens to tf-idf features
     tfidf = TfidfVec.fit_transform(sent_tokens)
@@ -75,21 +74,21 @@ def response(user_response):
 
 
 flag=True
-print("ROBO: My name is Robo. I will answer your queries about Chatbots. If you want to exit, type Bye!")
+print("BOT: My name is Chatbot. I will answer your questions about our HR department. If you want to exit, type Bye!")
 while(flag==True):
     user_response = input()
     user_response=user_response.lower()
     if(user_response!='bye'):
         if(user_response=='thanks' or user_response=='thank you' ):
             flag=False
-            print("ROBO: You are welcome..")
+            print("BOT: You are welcome..")
         else:
             if(greeting(user_response)!=None):
-                print("ROBO: "+greeting(user_response))
+                print("BOT: "+greeting(user_response))
             else:
-                print("ROBO: ",end="")
+                print("BOT: ",end="")
                 print(response(user_response))
                 sent_tokens.remove(user_response)
     else:
         flag=False
-        print("ROBO: Bye! take care..")
+        print("BOT: Bye! take care..")
